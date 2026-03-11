@@ -1,18 +1,16 @@
-version: '3.8'
-
 services:
   cassandra:
-    image: bitnami/cassandra:4.1
+    image: cassandra:4.1
     container_name: cassandra
     ports:
       - "9042:9042"
     volumes:
-      - cassandra-data:/bitnami/cassandra
+      - cassandra-data:/var/lib/cassandra
     environment:
       - CASSANDRA_SEEDS=cassandra
       - CASSANDRA_CLUSTER_NAME=chat-cluster
-      - CASSANDRA_PASSWORD_SEEDER=yes
-      - CASSANDRA_PASSWORD=cassandra
+      - CASSANDRA_AUTHENTICATOR=PasswordAuthenticator
+      - CASSANDRA_DEFAULT_SUPERUSER_PASSWORD=cassandra
     healthcheck:
       test: ["CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'DESCRIBE KEYSPACES'"]
       interval: 15s
@@ -23,7 +21,7 @@ services:
       - chat-network
 
   cassandra-init:
-    image: bitnami/cassandra:4.1
+    image: cassandra:4.1
     container_name: cassandra-init
     depends_on:
       cassandra:
@@ -56,12 +54,12 @@ services:
       - chat-network
 
   zookeeper:
-    image: bitnami/zookeeper:3.9
+    image: zookeeper:3.9
     container_name: zookeeper
     ports:
       - "2181:2181"
     environment:
-      - ALLOW_ANONYMOUS_LOGIN=yes
+      - ZOO_4LW_COMMANDS_WHITELIST=ruok,mntr,conf
     healthcheck:
       test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
       interval: 10s
