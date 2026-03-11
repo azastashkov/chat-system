@@ -1,4 +1,4 @@
-FROM gradle:8-jdk21 AS builder
+FROM eclipse-temurin:21-jdk AS builder
 WORKDIR /app
 COPY . .
 ARG MODULE
