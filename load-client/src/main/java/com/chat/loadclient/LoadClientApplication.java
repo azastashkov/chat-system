@@ -6,9 +6,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration;
+import org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration;
+import org.springframework.boot.autoconfigure.data.cassandra.CassandraReactiveDataAutoConfiguration;
 
 @Slf4j
-@SpringBootApplication
+@SpringBootApplication(exclude = {
+        CassandraAutoConfiguration.class,
+        CassandraDataAutoConfiguration.class,
+        CassandraReactiveDataAutoConfiguration.class
+})
 @RequiredArgsConstructor
 public class LoadClientApplication implements CommandLineRunner {
 
