@@ -80,7 +80,7 @@ public class ApiClient {
 
     public Map<String, String> discoverChatServer(String token) {
         String response = webClient.get()
-                .uri("/api/chat/discover")
+                .uri("/api/discover/chat-server")
                 .header("Authorization", "Bearer " + token)
                 .retrieve()
                 .bodyToMono(String.class)
