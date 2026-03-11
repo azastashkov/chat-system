@@ -1,6 +1,8 @@
 package com.chat.api.service;
 
 import com.chat.api.exception.ApiException;
+import com.chat.common.util.JsonUtil;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
@@ -35,7 +37,9 @@ public class DiscoveryService {
             String selectedServer = sortedServers.get(index);
 
             byte[] data = curatorFramework.getData().forPath(CHAT_SERVERS_PATH + "/" + selectedServer);
-            String wsUrl = new String(data, StandardCharsets.UTF_8);
+            String nodeJson = new String(data, StandardCharsets.UTF_8);
+            JsonNode nodeData = JsonUtil.fromJson(nodeJson, JsonNode.class);
+            String wsUrl = nodeData.get("wsUrl").asText();
 
             log.debug("Assigned user {} to chat server {} (wsUrl={})", userId, selectedServer, wsUrl);
 
