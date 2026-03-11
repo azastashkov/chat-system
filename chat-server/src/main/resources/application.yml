@@ -1,0 +1,36 @@
+server:
+  port: ${SERVER_PORT:8081}
+
+spring:
+  application:
+    name: chat-server
+  cassandra:
+    keyspace-name: chat_system
+    contact-points: ${CASSANDRA_HOST:localhost}
+    port: ${CASSANDRA_PORT:9042}
+    local-datacenter: datacenter1
+    schema-action: none
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+zookeeper:
+  connect-string: ${ZOOKEEPER_HOST:localhost}:${ZOOKEEPER_PORT:2181}
+
+chat-server:
+  server-id: ${SERVER_ID:chat-1}
+  ws-host: ${WS_HOST:localhost}
+  ws-port: ${SERVER_PORT:8081}
+
+jwt:
+  secret: ${JWT_SECRET:myDefaultSecretKeyThatIsLongEnoughForHS256Algorithm123}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  metrics:
+    tags:
+      application: ${spring.application.name}

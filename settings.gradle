@@ -1,0 +1,8 @@
+rootProject.name = 'chat-system'
+
+include 'common',
+        'api-server',
+        'chat-server',
+        'presence-server',
+        'notification-server',
+        'load-client'

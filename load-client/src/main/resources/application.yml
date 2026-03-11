@@ -1,0 +1,17 @@
+load-test:
+  api-server-url: ${API_SERVER_URL:http://localhost:8080}
+  num-users: ${NUM_USERS:20}
+  messages-per-user: ${MESSAGES_PER_USER:50}
+  ramp-up-seconds: ${RAMP_UP_SECONDS:10}
+  group-size: ${GROUP_SIZE:5}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  server:
+    port: 8085
+  metrics:
+    tags:
+      application: load-client

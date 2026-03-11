@@ -1,0 +1,264 @@
+version: '3.8'
+
+services:
+  cassandra:
+    image: bitnami/cassandra:4.1
+    container_name: cassandra
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra-data:/bitnami/cassandra
+    environment:
+      - CASSANDRA_SEEDS=cassandra
+      - CASSANDRA_CLUSTER_NAME=chat-cluster
+      - CASSANDRA_PASSWORD_SEEDER=yes
+      - CASSANDRA_PASSWORD=cassandra
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'DESCRIBE KEYSPACES'"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - chat-network
+
+  cassandra-init:
+    image: bitnami/cassandra:4.1
+    container_name: cassandra-init
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    volumes:
+      - ./scripts/cassandra-init.cql:/scripts/cassandra-init.cql
+    command: >
+      bash -c "
+        echo 'Waiting for Cassandra to be fully ready...';
+        sleep 10;
+        echo 'Running CQL init script...';
+        cqlsh cassandra 9042 -u cassandra -p cassandra -f /scripts/cassandra-init.cql;
+        echo 'Cassandra initialization complete.';
+      "
+    restart: "no"
+    networks:
+      - chat-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chat-network
+
+  zookeeper:
+    image: bitnami/zookeeper:3.9
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chat-network
+
+  api-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: api-server
+    container_name: api-server
+    ports:
+      - "8080:8080"
+    environment:
+      - CASSANDRA_HOST=cassandra
+      - CASSANDRA_PORT=9042
+      - CASSANDRA_USERNAME=cassandra
+      - CASSANDRA_PASSWORD=cassandra
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ZOOKEEPER_HOST=zookeeper
+      - ZOOKEEPER_PORT=2181
+      - JWT_SECRET=chat-system-jwt-secret-key-for-development
+      - SERVER_PORT=8080
+    depends_on:
+      cassandra-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      zookeeper:
+        condition: service_healthy
+    networks:
+      - chat-network
+
+  chat-server-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: chat-server
+    container_name: chat-server-1
+    ports:
+      - "8081:8081"
+    environment:
+      - CASSANDRA_HOST=cassandra
+      - CASSANDRA_PORT=9042
+      - CASSANDRA_USERNAME=cassandra
+      - CASSANDRA_PASSWORD=cassandra
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ZOOKEEPER_HOST=zookeeper
+      - ZOOKEEPER_PORT=2181
+      - JWT_SECRET=chat-system-jwt-secret-key-for-development
+      - SERVER_ID=chat-1
+      - SERVER_PORT=8081
+      - WS_HOST=chat-server-1
+    depends_on:
+      cassandra-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      zookeeper:
+        condition: service_healthy
+    networks:
+      - chat-network
+
+  chat-server-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: chat-server
+    container_name: chat-server-2
+    ports:
+      - "8082:8082"
+    environment:
+      - CASSANDRA_HOST=cassandra
+      - CASSANDRA_PORT=9042
+      - CASSANDRA_USERNAME=cassandra
+      - CASSANDRA_PASSWORD=cassandra
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ZOOKEEPER_HOST=zookeeper
+      - ZOOKEEPER_PORT=2181
+      - JWT_SECRET=chat-system-jwt-secret-key-for-development
+      - SERVER_ID=chat-2
+      - SERVER_PORT=8082
+      - WS_HOST=chat-server-2
+    depends_on:
+      cassandra-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      zookeeper:
+        condition: service_healthy
+    networks:
+      - chat-network
+
+  presence-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: presence-server
+    container_name: presence-server
+    ports:
+      - "8083:8083"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - SERVER_PORT=8083
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - chat-network
+
+  notification-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: notification-server
+    container_name: notification-server
+    ports:
+      - "8084:8084"
+    environment:
+      - CASSANDRA_HOST=cassandra
+      - CASSANDRA_PORT=9042
+      - CASSANDRA_USERNAME=cassandra
+      - CASSANDRA_PASSWORD=cassandra
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - SERVER_PORT=8084
+    depends_on:
+      cassandra-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    networks:
+      - chat-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - chat-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+    depends_on:
+      - prometheus
+    networks:
+      - chat-network
+
+  load-client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: load-client
+    container_name: load-client
+    profiles:
+      - test
+    ports:
+      - "8085:8085"
+    environment:
+      - API_SERVER_URL=http://api-server:8080
+      - NUM_USERS=20
+      - MESSAGES_PER_USER=50
+      - SERVER_PORT=8085
+    depends_on:
+      - api-server
+      - chat-server-1
+      - chat-server-2
+    networks:
+      - chat-network
+
+networks:
+  chat-network:
+    driver: bridge
+
+volumes:
+  cassandra-data:

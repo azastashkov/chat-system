@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-03-10T00:00:00.000Z" agent="draw.io" version="22.0.0">
+  <diagram id="chat-system-architecture" name="Architecture">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Client -->
+        <mxCell id="client" value="Client&#xa;(Browser / Mobile)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="320" width="160" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- API Server -->
+        <mxCell id="api-server" value="API Server&#xa;:8080" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="320" y="200" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Chat Server 1 -->
+        <mxCell id="chat-server-1" value="Chat Server 1&#xa;:8081" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="320" y="340" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Chat Server 2 -->
+        <mxCell id="chat-server-2" value="Chat Server 2&#xa;:8082" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="320" y="440" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Presence Server -->
+        <mxCell id="presence-server" value="Presence Server&#xa;:8083" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="320" y="540" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Notification Server -->
+        <mxCell id="notification-server" value="Notification Server&#xa;:8084" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="320" y="640" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ZooKeeper -->
+        <mxCell id="zookeeper" value="ZooKeeper&#xa;:2181" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="640" y="200" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Cassandra -->
+        <mxCell id="cassandra" value="Cassandra&#xa;:9042" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="640" y="340" width="140" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Redis -->
+        <mxCell id="redis" value="Redis&#xa;:6379" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="640" y="490" width="140" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Prometheus -->
+        <mxCell id="prometheus" value="Prometheus&#xa;:9090" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="960" y="320" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Grafana -->
+        <mxCell id="grafana" value="Grafana&#xa;:3000" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="320" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Client -> API Server (HTTP) -->
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="client" target="api-server" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e1-label" value="HTTP / REST" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;" vertex="1" connectable="0" parent="e1">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <!-- Client -> Chat Server 1 (WebSocket) -->
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="client" target="chat-server-1" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e2-label" value="WebSocket" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;" vertex="1" connectable="0" parent="e2">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <!-- Client -> Chat Server 2 (WebSocket) -->
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="client" target="chat-server-2" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e3-label" value="WebSocket" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;" vertex="1" connectable="0" parent="e3">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <!-- API Server -> ZooKeeper (read) -->
+        <mxCell id="e4" style="" edge="1" source="api-server" target="zookeeper" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e4-label" value="read" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;" vertex="1" connectable="0" parent="e4">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <!-- API Server -> Cassandra -->
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="api-server" target="cassandra" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e5-label" value="read/write" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;" vertex="1" connectable="0" parent="e5">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <!-- API Server -> Redis -->
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="api-server" target="redis" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e6-label" value="cache" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;" vertex="1" connectable="0" parent="e6">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <!-- Chat Server 1 -> ZooKeeper (register) -->
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="chat-server-1" target="zookeeper" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e7-label" value="register" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;" vertex="1" connectable="0" parent="e7">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <!-- Chat Server 1 -> Cassandra (write) -->
+        <mxCell id="e8" style="" edge="1" source="chat-server-1" target="cassandra" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e8-label" value="write" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;" vertex="1" connectable="0" parent="e8">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <!-- Chat Server 1 -> Redis (pub/sub) -->
+        <mxCell id="e9" style="" edge="1" source="chat-server-1" target="redis" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e9-label" value="pub/sub" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;" vertex="1" connectable="0" parent="e9">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <!-- Chat Server 2 -> ZooKeeper (register) -->
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="chat-server-2" target="zookeeper" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e10-label" value="register" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;" vertex="1" connectable="0" parent="e10">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <!-- Chat Server 2 -> Cassandra (write) -->
+        <mxCell id="e11" style="" edge="1" source="chat-server-2" target="cassandra" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e11-label" value="write" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;" vertex="1" connectable="0" parent="e11">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <!-- Chat Server 2 -> Redis (pub/sub) -->
+        <mxCell id="e12" style="" edge="1" source="chat-server-2" target="redis" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e12-label" value="pub/sub" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;" vertex="1" connectable="0" parent="e12">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <!-- Presence Server -> Redis -->
+        <mxCell id="e13" style="" edge="1" source="presence-server" target="redis" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e13-label" value="presence data" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;" vertex="1" connectable="0" parent="e13">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <!-- Notification Server -> Redis (subscribe) -->
+        <mxCell id="e14" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="notification-server" target="redis" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e14-label" value="subscribe" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;" vertex="1" connectable="0" parent="e14">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <!-- Notification Server -> Cassandra (write) -->
+        <mxCell id="e15" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="notification-server" target="cassandra" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e15-label" value="write" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;" vertex="1" connectable="0" parent="e15">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <!-- Prometheus -> API Server (scrape) -->
+        <mxCell id="e16" style="dashed=1;" edge="1" source="prometheus" target="api-server" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e16-label" value="scrape" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;" vertex="1" connectable="0" parent="e16">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <!-- Prometheus -> Chat Server 1 (scrape) -->
+        <mxCell id="e17" style="dashed=1;" edge="1" source="prometheus" target="chat-server-1" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e17-label" value="scrape" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;" vertex="1" connectable="0" parent="e17">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <!-- Prometheus -> Chat Server 2 (scrape) -->
+        <mxCell id="e18" style="dashed=1;" edge="1" source="prometheus" target="chat-server-2" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e18-label" value="scrape" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;" vertex="1" connectable="0" parent="e18">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <!-- Prometheus -> Presence Server (scrape) -->
+        <mxCell id="e19" style="dashed=1;" edge="1" source="prometheus" target="presence-server" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e19-label" value="scrape" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;" vertex="1" connectable="0" parent="e19">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <!-- Prometheus -> Notification Server (scrape) -->
+        <mxCell id="e20" style="dashed=1;" edge="1" source="prometheus" target="notification-server" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e20-label" value="scrape" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;" vertex="1" connectable="0" parent="e20">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <!-- Grafana -> Prometheus -->
+        <mxCell id="e21" style="" edge="1" source="grafana" target="prometheus" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e21-label" value="query" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;" vertex="1" connectable="0" parent="e21">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
