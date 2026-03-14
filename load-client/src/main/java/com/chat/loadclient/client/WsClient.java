@@ -5,7 +5,6 @@ import com.chat.common.ws.WsInboundMessage;
 import com.chat.common.ws.WsMessageType;
 import com.chat.common.ws.WsOutboundMessage;
 import com.chat.loadclient.metrics.LoadTestMetrics;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.client.WebSocketClient;

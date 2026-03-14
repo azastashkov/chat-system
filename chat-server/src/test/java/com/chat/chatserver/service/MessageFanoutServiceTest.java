@@ -2,7 +2,6 @@ package com.chat.chatserver.service;
 
 import com.chat.chatserver.model.ChannelMember;
 import com.chat.common.event.ChatMessageEvent;
-import com.chat.common.util.JsonUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

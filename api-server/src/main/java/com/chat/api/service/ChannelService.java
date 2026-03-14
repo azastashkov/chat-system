@@ -11,7 +11,6 @@ import com.chat.api.repository.ChannelRepository;
 import com.chat.api.repository.UserChannelRepository;
 import com.chat.api.repository.UserRepository;
 import com.chat.common.dto.ChannelDto;
-import com.chat.common.dto.UserDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
