@@ -1,6 +1,6 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.6.1 Chrome/142.0.7444.265 Electron/39.8.0 Safari/537.36" version="29.6.1">
   <diagram id="chat-system-architecture" name="Architecture">
-    <mxGraphModel dx="1452" dy="893" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+    <mxGraphModel dx="1645" dy="1012" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -22,6 +22,14 @@
         </mxCell>
         <mxCell id="Xto9gH8e6A1Pn1V2fBfF-4" connectable="0" parent="Xto9gH8e6A1Pn1V2fBfF-3" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="WebSocket" vertex="1">
           <mxGeometry relative="1" x="-0.0769" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Xto9gH8e6A1Pn1V2fBfF-7" edge="1" parent="1" source="client" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="presence-server">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Xto9gH8e6A1Pn1V2fBfF-9" connectable="0" parent="Xto9gH8e6A1Pn1V2fBfF-7" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="connect, disconnect, heartbeat" vertex="1">
+          <mxGeometry relative="1" x="0.3324" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
@@ -123,6 +131,44 @@
         </mxCell>
         <mxCell id="Xto9gH8e6A1Pn1V2fBfF-5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=12;" value="ZooNavigator" vertex="1">
           <mxGeometry height="60" width="140" x="1270" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="yI04tyhcR79yeV5Ikf2F-2" edge="1" parent="1" source="yI04tyhcR79yeV5Ikf2F-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;dashed=1;" target="notification-server">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="yI04tyhcR79yeV5Ikf2F-3" connectable="0" parent="yI04tyhcR79yeV5Ikf2F-2" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="get notifications" vertex="1">
+          <mxGeometry relative="1" x="-0.0286" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="yI04tyhcR79yeV5Ikf2F-4" edge="1" parent="1" source="yI04tyhcR79yeV5Ikf2F-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;dashed=1;" target="notification-server">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="yI04tyhcR79yeV5Ikf2F-6" connectable="0" parent="yI04tyhcR79yeV5Ikf2F-4" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="mark as read" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="F__BAGC_seTxh0dVXjQR-1" edge="1" parent="1" source="yI04tyhcR79yeV5Ikf2F-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;" target="yI04tyhcR79yeV5Ikf2F-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="yI04tyhcR79yeV5Ikf2F-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontStyle=1;fontSize=12;dashed=1;" value="Notification Scheduler" vertex="1">
+          <mxGeometry height="60" width="140" x="360" y="590" as="geometry" />
+        </mxCell>
+        <mxCell id="F__BAGC_seTxh0dVXjQR-2" edge="1" parent="1" source="yI04tyhcR79yeV5Ikf2F-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="client">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="230" y="740" />
+              <mxPoint x="230" y="320" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="F__BAGC_seTxh0dVXjQR-3" connectable="0" parent="F__BAGC_seTxh0dVXjQR-2" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="push notification" vertex="1">
+          <mxGeometry relative="1" x="0.0305" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="yI04tyhcR79yeV5Ikf2F-7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontStyle=1;fontSize=12;dashed=1;" value="Third Party Notification Services" vertex="1">
+          <mxGeometry height="60" width="140" x="360" y="710" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
