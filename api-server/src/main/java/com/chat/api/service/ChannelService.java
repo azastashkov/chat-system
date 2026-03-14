@@ -1,8 +1,15 @@
 package com.chat.api.service;
 
 import com.chat.api.exception.ApiException;
-import com.chat.api.model.*;
-import com.chat.api.repository.*;
+import com.chat.api.model.Channel;
+import com.chat.api.model.ChannelMember;
+import com.chat.api.model.ChannelMemberKey;
+import com.chat.api.model.UserChannel;
+import com.chat.api.model.UserChannelKey;
+import com.chat.api.repository.ChannelMemberRepository;
+import com.chat.api.repository.ChannelRepository;
+import com.chat.api.repository.UserChannelRepository;
+import com.chat.api.repository.UserRepository;
 import com.chat.common.dto.ChannelDto;
 import com.chat.common.dto.UserDto;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +18,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 @Slf4j
 @Service
