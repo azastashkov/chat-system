@@ -1,6 +1,6 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.6.1 Chrome/142.0.7444.265 Electron/39.8.0 Safari/537.36" version="29.6.1">
   <diagram id="chat-system-architecture" name="Architecture">
-    <mxGraphModel dx="2066" dy="1119" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+    <mxGraphModel dx="1452" dy="893" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -120,6 +120,9 @@
         </mxCell>
         <mxCell id="e21" edge="1" parent="1" source="grafana" style="html=1;align=center;verticalAlign=middle;fontSize=10;" target="prometheus" value="query">
           <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Xto9gH8e6A1Pn1V2fBfF-5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=12;" value="zoonavigator" vertex="1">
+          <mxGeometry height="60" width="140" x="1270" y="150" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
