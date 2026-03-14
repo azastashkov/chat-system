@@ -42,6 +42,9 @@ public class ZookeeperRegistrar {
 
         String json = JsonUtil.toJson(nodeData);
 
+        if (curatorFramework.checkExists().forPath(path) != null) {
+            curatorFramework.delete().forPath(path);
+        }
         curatorFramework.create()
                 .creatingParentsIfNeeded()
                 .withMode(CreateMode.EPHEMERAL)

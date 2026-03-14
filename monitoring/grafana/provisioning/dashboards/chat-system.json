@@ -228,7 +228,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum(rate(spring_data_redis_commands_seconds_count[1m])) by (job)",
+          "expr": "sum(rate(lettuce_command_completion_seconds_count[1m])) by (job)",
           "legendFormat": "{{job}} ops/s",
           "refId": "A"
         }

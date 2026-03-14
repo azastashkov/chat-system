@@ -1,6 +1,7 @@
 package com.chat.chatserver.service;
 
 import com.chat.chatserver.codec.WsMessageCodec;
+import com.chat.chatserver.metrics.ChatMetrics;
 import com.chat.chatserver.model.ChannelMember;
 import com.chat.chatserver.model.Message;
 import com.chat.common.event.ChatMessageEvent;
@@ -9,6 +10,7 @@ import com.chat.common.util.TimeUuidUtil;
 import com.chat.common.ws.WsMessageType;
 import com.chat.common.ws.WsOutboundMessage;
 import com.fasterxml.jackson.databind.JsonNode;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.cassandra.core.CassandraTemplate;
@@ -31,9 +33,12 @@ public class MessageService {
     private final CassandraTemplate cassandraTemplate;
     private final MessageFanoutService messageFanoutService;
     private final WsMessageCodec codec;
+    private final ChatMetrics chatMetrics;
 
     public void handleMessage(UUID senderId, String senderName, JsonNode payload,
                               String requestId, WebSocketSession senderSession) {
+        Timer.Sample timer = chatMetrics.startTimer();
+
         if (payload == null || !payload.has("channelId") || !payload.has("content")) {
             sendError(senderSession, "Missing channelId or content", requestId);
             return;
@@ -82,6 +87,9 @@ public class MessageService {
 
         // Send SEND_ACK back to sender
         sendAck(senderSession, messageId, requestId);
+
+        chatMetrics.incrementMessagesSent();
+        chatMetrics.recordLatency(timer);
 
         log.info("Message {} handled: channel={}, sender={}", messageId, channelId, senderId);
     }

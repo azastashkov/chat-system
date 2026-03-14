@@ -1,6 +1,7 @@
 package com.chat.chatserver.handler;
 
 import com.chat.chatserver.codec.WsMessageCodec;
+import com.chat.chatserver.metrics.ChatMetrics;
 import com.chat.chatserver.service.MessageService;
 import com.chat.chatserver.session.SessionManager;
 import com.chat.common.constant.RedisKeys;
@@ -39,6 +40,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final MessageService messageService;
     private final WsMessageCodec codec;
     private final RedisTemplate<String, String> redisTemplate;
+    private final ChatMetrics chatMetrics;
 
     @Value("${chat-server.server-id}")
     private String serverId;
@@ -133,8 +135,11 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         log.debug("Received {} from user {} (requestId={})", inbound.getType(), userId, inbound.getRequestId());
 
         switch (inbound.getType()) {
-            case SEND_MESSAGE -> messageService.handleMessage(
+            case SEND_MESSAGE -> {
+                chatMetrics.incrementMessagesReceived();
+                messageService.handleMessage(
                     userId, username, inbound.getPayload(), inbound.getRequestId(), session);
+            }
             case TYPING -> handleTyping(userId, username, inbound.getPayload());
             case HEARTBEAT -> handleHeartbeat(userId);
             case ACK -> log.debug("ACK received from user {} for requestId={}", userId, inbound.getRequestId());
