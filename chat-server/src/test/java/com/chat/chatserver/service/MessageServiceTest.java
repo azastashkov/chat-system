@@ -1,6 +1,7 @@
 package com.chat.chatserver.service;
 
 import com.chat.chatserver.codec.WsMessageCodec;
+import com.chat.chatserver.metrics.ChatMetrics;
 import com.chat.chatserver.model.ChannelMember;
 import com.chat.common.event.ChatMessageEvent;
 import com.chat.common.util.JsonUtil;
@@ -15,6 +16,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.cassandra.core.CassandraTemplate;
 import org.springframework.data.cassandra.core.query.Query;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -24,6 +27,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -40,6 +44,15 @@ class MessageServiceTest {
 
     @Mock
     private WsMessageCodec codec;
+
+    @Mock
+    private ChatMetrics chatMetrics;
+
+    @Mock
+    private RedisTemplate<String, String> redisTemplate;
+
+    @Mock
+    private ValueOperations<String, String> valueOperations;
 
     @Mock
     private WebSocketSession session;
@@ -66,6 +79,8 @@ class MessageServiceTest {
         ));
 
         when(cassandraTemplate.exists(any(Query.class), eq(ChannelMember.class))).thenReturn(true);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.increment(anyString())).thenReturn(1L);
         when(codec.encode(any(WsOutboundMessage.class))).thenReturn("{\"type\":\"SEND_ACK\"}");
 
         messageService.handleMessage(senderId, senderName, payload, "req-1", session);
@@ -134,6 +149,8 @@ class MessageServiceTest {
         ));
 
         when(cassandraTemplate.exists(any(Query.class), eq(ChannelMember.class))).thenReturn(true);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.increment(anyString())).thenReturn(42L);
         when(codec.encode(any(WsOutboundMessage.class))).thenReturn("{\"type\":\"SEND_ACK\"}");
 
         messageService.handleMessage(senderId, senderName, payload, "req-1", session);
@@ -146,7 +163,29 @@ class MessageServiceTest {
         assertEquals(senderId, capturedEvent.getSenderId());
         assertEquals(senderName, capturedEvent.getSenderName());
         assertEquals("Test content", capturedEvent.getContent());
+        assertEquals(42L, capturedEvent.getSequenceNumber());
         assertNotNull(capturedEvent.getMessageId());
         assertNotNull(capturedEvent.getTimestamp());
+    }
+
+    @Test
+    void handleMessage_persistenceFailure_sendsError() throws Exception {
+        JsonNode payload = JsonUtil.toJsonNode(Map.of(
+                "channelId", channelId.toString(),
+                "content", "Hello"
+        ));
+
+        when(cassandraTemplate.exists(any(Query.class), eq(ChannelMember.class))).thenReturn(true);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.increment(anyString())).thenReturn(1L);
+        when(cassandraTemplate.insert(any())).thenThrow(new RuntimeException("Cassandra down"));
+        when(codec.encode(any(WsOutboundMessage.class))).thenReturn("{\"type\":\"ERROR\"}");
+
+        messageService.handleMessage(senderId, senderName, payload, "req-1", session);
+
+        // Fanout should NOT happen when persistence fails
+        verify(messageFanoutService, never()).fanout(any(), any());
+        // Error should be sent to client
+        verify(session).sendMessage(any(TextMessage.class));
     }
 }

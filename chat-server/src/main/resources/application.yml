@@ -6,7 +6,7 @@ spring:
     name: chat-server
   cassandra:
     keyspace-name: chat_system
-    contact-points: ${CASSANDRA_HOST:localhost}
+    contact-points: ${CASSANDRA_CONTACT_POINTS:${CASSANDRA_HOST:localhost}}
     port: ${CASSANDRA_PORT:9042}
     local-datacenter: datacenter1
     schema-action: none
@@ -16,12 +16,14 @@ spring:
       port: ${REDIS_PORT:6379}
 
 zookeeper:
-  connect-string: ${ZOOKEEPER_HOST:localhost}:${ZOOKEEPER_PORT:2181}
+  connect-string: ${ZOOKEEPER_CONNECT_STRING:localhost:2181}
 
 chat-server:
   server-id: ${SERVER_ID:chat-1}
   ws-host: ${WS_HOST:localhost}
   ws-port: ${SERVER_PORT:8081}
+  ws-send-time-limit: ${WS_SEND_TIME_LIMIT:5000}
+  ws-send-buffer-size-limit: ${WS_SEND_BUFFER_SIZE_LIMIT:524288}
 
 jwt:
   secret: ${JWT_SECRET:myDefaultSecretKeyThatIsLongEnoughForHS256Algorithm123}

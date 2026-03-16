@@ -30,6 +30,20 @@ public final class RedisKeys {
         return "chat:server:" + serverId;
     }
 
+    public static String channelSequence(UUID channelId) {
+        return "channel:seq:" + channelId;
+    }
+
+    public static String chatServerStream(String serverId) {
+        return "stream:chat:" + serverId;
+    }
+
+    public static String typingChannel(UUID channelId) {
+        return "typing:" + channelId;
+    }
+
     public static final String PRESENCE_CHANGES = "presence:changes";
     public static final String NOTIFICATIONS = "notifications";
+    public static final String STREAM_NOTIFICATIONS = "stream:notifications";
+    public static final String CHANNEL_MEMBERSHIP_INVALIDATE = "channel:membership:invalidate";
 }

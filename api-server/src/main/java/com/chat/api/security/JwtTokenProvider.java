@@ -11,11 +11,17 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
 @Component
 public class JwtTokenProvider {
+
+    private static final Set<String> DEFAULT_SECRETS = Set.of(
+            "myDefaultSecretKeyThatIsLongEnoughForHS256Algorithm123",
+            "chat-system-jwt-secret-key-for-development"
+    );
 
     private final SecretKey key;
     private final long expirationMs;
@@ -23,6 +29,11 @@ public class JwtTokenProvider {
     public JwtTokenProvider(
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.expiration-ms}") long expirationMs) {
+        if (DEFAULT_SECRETS.contains(secret)) {
+            log.warn("JWT secret is set to a known default value. "
+                    + "This is insecure for production use. "
+                    + "Set a unique jwt.secret via environment variable JWT_SECRET.");
+        }
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expirationMs = expirationMs;
     }

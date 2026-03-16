@@ -6,7 +6,7 @@ spring:
     name: notification-server
   cassandra:
     keyspace-name: chat_system
-    contact-points: ${CASSANDRA_HOST:localhost}
+    contact-points: ${CASSANDRA_CONTACT_POINTS:${CASSANDRA_HOST:localhost}}
     port: ${CASSANDRA_PORT:9042}
     local-datacenter: datacenter1
     schema-action: none

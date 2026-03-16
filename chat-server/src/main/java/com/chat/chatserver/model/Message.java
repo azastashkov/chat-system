@@ -37,6 +37,9 @@ public class Message {
     @Column("message_type")
     private String messageType;
 
+    @Column("sequence_number")
+    private Long sequenceNumber;
+
     @Column("created_at")
     private Instant createdAt;
 }

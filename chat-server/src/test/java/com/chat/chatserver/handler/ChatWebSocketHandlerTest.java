@@ -1,6 +1,10 @@
 package com.chat.chatserver.handler;
 
+import com.chat.chatserver.cache.ChannelMemberCache;
 import com.chat.chatserver.codec.WsMessageCodec;
+import com.chat.chatserver.metrics.ChatMetrics;
+import com.chat.chatserver.ratelimit.MessageRateLimiter;
+import com.chat.chatserver.service.DrainService;
 import com.chat.chatserver.service.MessageService;
 import com.chat.chatserver.session.SessionManager;
 import com.chat.common.util.JsonUtil;
@@ -47,6 +51,18 @@ class ChatWebSocketHandlerTest {
 
     @Mock
     private RedisTemplate<String, String> redisTemplate;
+
+    @Mock
+    private ChatMetrics chatMetrics;
+
+    @Mock
+    private MessageRateLimiter rateLimiter;
+
+    @Mock
+    private DrainService drainService;
+
+    @Mock
+    private ChannelMemberCache channelMemberCache;
 
     @Mock
     private HashOperations<String, Object, Object> hashOperations;
@@ -115,6 +131,7 @@ class ChatWebSocketHandlerTest {
         when(redisTemplate.opsForHash()).thenReturn(hashOperations);
         when(hashOperations.size(anyString())).thenReturn(0L);
         when(redisTemplate.opsForSet()).thenReturn(setOperations);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
         handler.afterConnectionClosed(session, CloseStatus.NORMAL);
 
@@ -143,6 +160,7 @@ class ChatWebSocketHandlerTest {
         attrs.put("userId", userId);
         attrs.put("username", username);
         when(session.getAttributes()).thenReturn(attrs);
+        when(rateLimiter.allowMessage(userId)).thenReturn(true);
 
         WsInboundMessage inbound = WsInboundMessage.builder()
                 .type(WsMessageType.SEND_MESSAGE)
@@ -156,6 +174,28 @@ class ChatWebSocketHandlerTest {
         handler.handleTextMessage(session, new TextMessage(payload));
 
         verify(messageService).handleMessage(eq(userId), eq(username), any(), eq("req-1"), eq(session));
+    }
+
+    @Test
+    void handleTextMessage_rateLimited_sendsError() throws Exception {
+        UUID userId = UUID.randomUUID();
+
+        Map<String, Object> attrs = new HashMap<>();
+        attrs.put("userId", userId);
+        attrs.put("username", "testuser");
+        when(session.getAttributes()).thenReturn(attrs);
+        when(rateLimiter.allowMessage(userId)).thenReturn(false);
+
+        WsInboundMessage inbound = WsInboundMessage.builder()
+                .type(WsMessageType.SEND_MESSAGE)
+                .requestId("req-1")
+                .build();
+        String payload = JsonUtil.toJson(inbound);
+        when(codec.decode(payload)).thenReturn(inbound);
+
+        handler.handleTextMessage(session, new TextMessage(payload));
+
+        verify(messageService, never()).handleMessage(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -196,5 +236,15 @@ class ChatWebSocketHandlerTest {
         handler.handleTextMessage(session, new TextMessage(payload));
 
         verify(messageService, never()).handleMessage(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void afterConnectionEstablished_draining_rejectsConnection() throws Exception {
+        when(drainService.isDraining()).thenReturn(true);
+
+        handler.afterConnectionEstablished(session);
+
+        verify(session).close(CloseStatus.SERVICE_RESTARTED);
+        verify(sessionManager, never()).addSession(any(), any());
     }
 }

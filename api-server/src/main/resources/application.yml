@@ -6,7 +6,7 @@ spring:
     name: api-server
   cassandra:
     keyspace-name: chat_system
-    contact-points: ${CASSANDRA_HOST:localhost}
+    contact-points: ${CASSANDRA_CONTACT_POINTS:${CASSANDRA_HOST:localhost}}
     port: ${CASSANDRA_PORT:9042}
     local-datacenter: datacenter1
     schema-action: none
@@ -16,7 +16,7 @@ spring:
       port: ${REDIS_PORT:6379}
 
 zookeeper:
-  connect-string: ${ZOOKEEPER_HOST:localhost}:${ZOOKEEPER_PORT:2181}
+  connect-string: ${ZOOKEEPER_CONNECT_STRING:localhost:2181}
 
 jwt:
   secret: ${JWT_SECRET:myDefaultSecretKeyThatIsLongEnoughForHS256Algorithm123}

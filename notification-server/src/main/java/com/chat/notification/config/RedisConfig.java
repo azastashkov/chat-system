@@ -1,15 +1,23 @@
 package com.chat.notification.config;
 
 import com.chat.common.constant.RedisKeys;
-import com.chat.notification.service.NotificationListenerService;
+import com.chat.notification.service.NotificationStreamConsumer;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.stream.Consumer;
+import org.springframework.data.redis.connection.stream.MapRecord;
+import org.springframework.data.redis.connection.stream.ReadOffset;
+import org.springframework.data.redis.connection.stream.StreamOffset;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.listener.ChannelTopic;
-import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+
+@Slf4j
 @Configuration
 public class RedisConfig {
 
@@ -25,13 +33,40 @@ public class RedisConfig {
         return template;
     }
 
-    @Bean
-    public RedisMessageListenerContainer redisMessageListenerContainer(
+    @Bean(initMethod = "start", destroyMethod = "stop")
+    public StreamMessageListenerContainer<String, MapRecord<String, String, String>> notificationStreamListenerContainer(
             RedisConnectionFactory connectionFactory,
-            NotificationListenerService notificationListenerService) {
-        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
-        container.setConnectionFactory(connectionFactory);
-        container.addMessageListener(notificationListenerService, new ChannelTopic(RedisKeys.NOTIFICATIONS));
+            NotificationStreamConsumer notificationStreamConsumer) {
+
+        String streamKey = RedisKeys.STREAM_NOTIFICATIONS;
+        String groupName = "notification-group";
+
+        // Create consumer group (and stream if needed)
+        try (var connection = connectionFactory.getConnection()) {
+            connection.streamCommands().xGroupCreate(
+                    streamKey.getBytes(StandardCharsets.UTF_8),
+                    groupName,
+                    ReadOffset.from("0"),
+                    true
+            );
+        } catch (Exception e) {
+            log.debug("Consumer group setup for {}: {}", streamKey, e.getMessage());
+        }
+
+        var options = StreamMessageListenerContainer.StreamMessageListenerContainerOptions
+                .<String, MapRecord<String, String, String>>builder()
+                .pollTimeout(Duration.ofSeconds(2))
+                .serializer(new StringRedisSerializer())
+                .build();
+
+        var container = StreamMessageListenerContainer.create(connectionFactory, options);
+
+        container.receiveAutoAck(
+                Consumer.from(groupName, "notification-server"),
+                StreamOffset.create(streamKey, ReadOffset.lastConsumed()),
+                notificationStreamConsumer
+        );
+
         return container;
     }
 }

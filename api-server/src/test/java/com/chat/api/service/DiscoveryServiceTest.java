@@ -39,6 +39,10 @@ class DiscoveryServiceTest {
     @InjectMocks
     private DiscoveryService discoveryService;
 
+    private static final String SERVER_1_JSON = "{\"serverId\":\"server-1\",\"host\":\"server-1\",\"wsPort\":9090,\"wsUrl\":\"ws://server-1:9090/ws\"}";
+    private static final String SERVER_2_JSON = "{\"serverId\":\"server-2\",\"host\":\"server-2\",\"wsPort\":9090,\"wsUrl\":\"ws://server-2:9090/ws\"}";
+    private static final String SERVER_3_JSON = "{\"serverId\":\"server-3\",\"host\":\"server-3\",\"wsPort\":9090,\"wsUrl\":\"ws://server-3:9090/ws\"}";
+
     @BeforeEach
     void setUp() throws Exception {
         when(curatorFramework.getChildren()).thenReturn(getChildrenBuilder);
@@ -50,7 +54,7 @@ class DiscoveryServiceTest {
         when(getChildrenBuilder.forPath("/chat-servers")).thenReturn(servers);
         when(curatorFramework.getData()).thenReturn(getDataBuilder);
         when(getDataBuilder.forPath(anyString()))
-                .thenReturn("ws://server-1:9090".getBytes(StandardCharsets.UTF_8));
+                .thenReturn(SERVER_1_JSON.getBytes(StandardCharsets.UTF_8));
 
         UUID userId = UUID.randomUUID();
 
@@ -68,11 +72,11 @@ class DiscoveryServiceTest {
         when(getChildrenBuilder.forPath("/chat-servers")).thenReturn(servers);
         when(curatorFramework.getData()).thenReturn(getDataBuilder);
         when(getDataBuilder.forPath("/chat-servers/server-1"))
-                .thenReturn("ws://server-1:9090".getBytes(StandardCharsets.UTF_8));
+                .thenReturn(SERVER_1_JSON.getBytes(StandardCharsets.UTF_8));
         when(getDataBuilder.forPath("/chat-servers/server-2"))
-                .thenReturn("ws://server-2:9090".getBytes(StandardCharsets.UTF_8));
+                .thenReturn(SERVER_2_JSON.getBytes(StandardCharsets.UTF_8));
         when(getDataBuilder.forPath("/chat-servers/server-3"))
-                .thenReturn("ws://server-3:9090".getBytes(StandardCharsets.UTF_8));
+                .thenReturn(SERVER_3_JSON.getBytes(StandardCharsets.UTF_8));
 
         Set<String> assignedServers = new HashSet<>();
         for (int i = 0; i < 100; i++) {

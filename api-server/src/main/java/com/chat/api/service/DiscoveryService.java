@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -33,12 +32,8 @@ public class DiscoveryService {
                 throw new ApiException("No chat servers available", HttpStatus.SERVICE_UNAVAILABLE);
             }
 
-            List<String> sortedServers = new ArrayList<>(children);
-            Collections.sort(sortedServers);
-
-            int hash = Math.abs(userId.hashCode());
-            int index = hash % sortedServers.size();
-            String selectedServer = sortedServers.get(index);
+            ConsistentHashRing ring = new ConsistentHashRing(new ArrayList<>(children));
+            String selectedServer = ring.getServer(userId);
 
             byte[] data = curatorFramework.getData().forPath(CHAT_SERVERS_PATH + "/" + selectedServer);
             String nodeJson = new String(data, StandardCharsets.UTF_8);

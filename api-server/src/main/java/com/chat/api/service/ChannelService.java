@@ -10,9 +10,11 @@ import com.chat.api.repository.ChannelMemberRepository;
 import com.chat.api.repository.ChannelRepository;
 import com.chat.api.repository.UserChannelRepository;
 import com.chat.api.repository.UserRepository;
+import com.chat.common.constant.RedisKeys;
 import com.chat.common.dto.ChannelDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -35,6 +37,7 @@ public class ChannelService {
     private final ChannelMemberRepository channelMemberRepository;
     private final UserChannelRepository userChannelRepository;
     private final UserRepository userRepository;
+    private final RedisTemplate<String, String> redisTemplate;
 
     public ChannelDto createChannel(String channelType, String name, List<UUID> memberIds, UUID creatorId) {
         if (memberIds != null && memberIds.size() > MAX_GROUP_MEMBERS) {
@@ -64,6 +67,9 @@ public class ChannelService {
             addMemberInternal(channelId, memberId, channelType, name,
                     memberId.equals(creatorId) ? "OWNER" : "MEMBER", now);
         }
+
+        // Invalidate channel member cache
+        redisTemplate.convertAndSend(RedisKeys.CHANNEL_MEMBERSHIP_INVALIDATE, channelId.toString());
 
         log.info("Channel created: channelId={}, type={}, name={}, members={}",
                 channelId, channelType, name, allMembers.size());
@@ -119,6 +125,9 @@ public class ChannelService {
             addMemberInternal(channelId, userId, channel.getChannelType(), channel.getName(), "MEMBER", now);
         }
 
+        // Invalidate channel member cache
+        redisTemplate.convertAndSend(RedisKeys.CHANNEL_MEMBERSHIP_INVALIDATE, channelId.toString());
+
         log.info("Added {} members to channel {}", userIds.size(), channelId);
     }
 
@@ -138,6 +147,9 @@ public class ChannelService {
                 .filter(uc -> uc.getChannelId().equals(channelId))
                 .findFirst()
                 .ifPresent(uc -> userChannelRepository.delete(uc));
+
+        // Invalidate channel member cache
+        redisTemplate.convertAndSend(RedisKeys.CHANNEL_MEMBERSHIP_INVALIDATE, channelId.toString());
 
         log.info("Removed member {} from channel {}", userId, channelId);
     }

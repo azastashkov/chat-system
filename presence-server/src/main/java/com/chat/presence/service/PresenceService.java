@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PresenceService {
 
-    private static final Duration PRESENCE_TTL = Duration.ofSeconds(90);
+    private static final Duration PRESENCE_TTL = Duration.ofSeconds(60);
     private static final Duration HEARTBEAT_TTL = Duration.ofSeconds(60);
     private static final String ONLINE = "ONLINE";
     private static final String OFFLINE = "OFFLINE";
@@ -27,34 +27,14 @@ public class PresenceService {
     private final RedisTemplate<String, String> redisTemplate;
     private final PresenceBroadcastService broadcastService;
 
+    // Fix 16: Chat-server is now the authority for setting presence.
+    // Presence-server only acts as a safety net for TTL-based cleanup.
     public void handleConnect(UUID userId) {
-        String key = RedisKeys.presence(userId);
-        String previousStatus = redisTemplate.opsForValue().get(key);
-
-        redisTemplate.opsForValue().set(key, ONLINE, PRESENCE_TTL);
-        log.info("User {} connected, presence set to ONLINE", userId);
-
-        if (!ONLINE.equals(previousStatus)) {
-            PresenceChangeEvent event = PresenceChangeEvent.builder()
-                    .userId(userId)
-                    .oldStatus(previousStatus != null ? previousStatus : OFFLINE)
-                    .newStatus(ONLINE)
-                    .build();
-            broadcastService.broadcastChange(event);
-        }
+        log.info("User {} connected (presence managed by chat-server)", userId);
     }
 
     public void handleDisconnect(UUID userId) {
-        String key = RedisKeys.presence(userId);
-        redisTemplate.opsForValue().set(key, OFFLINE);
-        log.info("User {} disconnected, presence set to OFFLINE", userId);
-
-        PresenceChangeEvent event = PresenceChangeEvent.builder()
-                .userId(userId)
-                .oldStatus(ONLINE)
-                .newStatus(OFFLINE)
-                .build();
-        broadcastService.broadcastChange(event);
+        log.info("User {} disconnected (presence managed by chat-server)", userId);
     }
 
     public void handleHeartbeat(UUID userId) {
@@ -94,6 +74,7 @@ public class PresenceService {
                 .collect(Collectors.toList());
     }
 
+    // Safety net: called when presence TTL expires without heartbeat renewal
     public void markOffline(UUID userId) {
         String key = RedisKeys.presence(userId);
         String currentStatus = redisTemplate.opsForValue().get(key);

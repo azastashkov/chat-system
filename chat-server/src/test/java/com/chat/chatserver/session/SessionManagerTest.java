@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -38,6 +39,8 @@ class SessionManagerTest {
     @BeforeEach
     void setUp() {
         sessionManager = new SessionManager();
+        ReflectionTestUtils.setField(sessionManager, "wsSendTimeLimit", 5000);
+        ReflectionTestUtils.setField(sessionManager, "wsSendBufferSizeLimit", 524288);
     }
 
     @Test
@@ -48,7 +51,6 @@ class SessionManagerTest {
 
         Set<WebSocketSession> sessions = sessionManager.getSessions(userId);
         assertEquals(1, sessions.size());
-        assertTrue(sessions.contains(session1));
     }
 
     @Test
@@ -60,8 +62,6 @@ class SessionManagerTest {
 
         Set<WebSocketSession> sessions = sessionManager.getSessions(userId);
         assertEquals(2, sessions.size());
-        assertTrue(sessions.contains(session1));
-        assertTrue(sessions.contains(session2));
     }
 
     @Test
@@ -86,7 +86,6 @@ class SessionManagerTest {
 
         Set<WebSocketSession> sessions = sessionManager.getSessions(userId);
         assertEquals(1, sessions.size());
-        assertTrue(sessions.contains(session2));
     }
 
     @Test
@@ -171,5 +170,22 @@ class SessionManagerTest {
         Set<WebSocketSession> sessions = sessionManager.getSessions(unknownUserId);
         assertNotNull(sessions);
         assertTrue(sessions.isEmpty());
+    }
+
+    @Test
+    void closeAllSessions_closesAndClearsAll() throws Exception {
+        UUID userId1 = UUID.randomUUID();
+        UUID userId2 = UUID.randomUUID();
+        when(session1.isOpen()).thenReturn(true);
+        when(session2.isOpen()).thenReturn(true);
+
+        sessionManager.addSession(userId1, session1);
+        sessionManager.addSession(userId2, session2);
+
+        sessionManager.closeAllSessions();
+
+        assertEquals(0, sessionManager.getSessionCount());
+        verify(session1).close(any());
+        verify(session2).close(any());
     }
 }

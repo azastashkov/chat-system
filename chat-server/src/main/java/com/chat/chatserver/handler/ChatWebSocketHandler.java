@@ -1,11 +1,15 @@
 package com.chat.chatserver.handler;
 
+import com.chat.chatserver.cache.ChannelMemberCache;
 import com.chat.chatserver.codec.WsMessageCodec;
 import com.chat.chatserver.metrics.ChatMetrics;
+import com.chat.chatserver.ratelimit.MessageRateLimiter;
+import com.chat.chatserver.service.DrainService;
 import com.chat.chatserver.service.MessageService;
 import com.chat.chatserver.session.SessionManager;
 import com.chat.common.constant.RedisKeys;
 import com.chat.common.event.PresenceChangeEvent;
+import com.chat.common.event.TypingEvent;
 import com.chat.common.util.JsonUtil;
 import com.chat.common.ws.WsInboundMessage;
 import com.chat.common.ws.WsMessageType;
@@ -27,7 +31,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.crypto.SecretKey;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -41,6 +47,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final WsMessageCodec codec;
     private final RedisTemplate<String, String> redisTemplate;
     private final ChatMetrics chatMetrics;
+    private final MessageRateLimiter rateLimiter;
+    private final DrainService drainService;
+    private final ChannelMemberCache channelMemberCache;
 
     @Value("${chat-server.server-id}")
     private String serverId;
@@ -51,9 +60,17 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private static final String ATTR_USER_ID = "userId";
     private static final String ATTR_USERNAME = "username";
     private static final String ATTR_DEVICE_ID = "deviceId";
+    private static final Duration PRESENCE_TTL = Duration.ofSeconds(60);
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+        // Fix 13: Reject connections if draining
+        if (drainService.isDraining()) {
+            log.info("Rejecting connection during drain");
+            session.close(CloseStatus.SERVICE_RESTARTED);
+            return;
+        }
+
         URI uri = session.getUri();
         if (uri == null) {
             session.close(CloseStatus.BAD_DATA);
@@ -101,6 +118,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         // Add to server:users:{serverId} set
         redisTemplate.opsForSet().add(RedisKeys.serverUsers(serverId), userId.toString());
 
+        // Fix 16: Set presence directly in Redis with TTL
+        redisTemplate.opsForValue().set(RedisKeys.presence(userId), "ONLINE", PRESENCE_TTL);
+
         // Report presence change via Redis pub/sub
         PresenceChangeEvent presenceEvent = PresenceChangeEvent.builder()
                 .userId(userId)
@@ -136,6 +156,11 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         switch (inbound.getType()) {
             case SEND_MESSAGE -> {
+                // Fix 3: Rate limit check
+                if (!rateLimiter.allowMessage(userId)) {
+                    sendError(session, "Rate limit exceeded", inbound.getRequestId());
+                    return;
+                }
                 chatMetrics.incrementMessagesReceived();
                 messageService.handleMessage(
                     userId, username, inbound.getPayload(), inbound.getRequestId(), session);
@@ -169,6 +194,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             // User is fully offline - remove from server set
             redisTemplate.opsForSet().remove(RedisKeys.serverUsers(serverId), userId.toString());
 
+            // Fix 16: Set presence to OFFLINE in Redis
+            redisTemplate.opsForValue().set(RedisKeys.presence(userId), "OFFLINE");
+
             // Report presence change
             PresenceChangeEvent presenceEvent = PresenceChangeEvent.builder()
                     .userId(userId)
@@ -188,11 +216,23 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         session.close(CloseStatus.SERVER_ERROR);
     }
 
+    // Fix 15: Publish typing to Redis for cross-server delivery + deliver locally
     private void handleTyping(UUID userId, String username, com.fasterxml.jackson.databind.JsonNode payload) {
         if (payload == null || !payload.has("channelId")) {
             return;
         }
         UUID channelId = UUID.fromString(payload.get("channelId").asText());
+
+        // Publish to Redis for cross-server delivery
+        TypingEvent typingEvent = TypingEvent.builder()
+                .channelId(channelId)
+                .userId(userId)
+                .username(username)
+                .originServerId(serverId)
+                .build();
+        redisTemplate.convertAndSend(RedisKeys.typingChannel(channelId), JsonUtil.toJson(typingEvent));
+
+        // Deliver locally to channel members
         WsOutboundMessage typingMessage = WsOutboundMessage.builder()
                 .type(WsMessageType.TYPING)
                 .payload(JsonUtil.toJsonNode(Map.of(
@@ -204,16 +244,26 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 .build();
 
         String encoded = codec.encode(typingMessage);
-        // Fanout typing indicator to all connected users (simplified: broadcast to all local sessions)
-        for (UUID connectedUserId : sessionManager.getAllConnectedUserIds()) {
-            if (!connectedUserId.equals(userId)) {
-                sessionManager.sendToUser(connectedUserId, encoded);
+        List<UUID> members = channelMemberCache.getMembers(channelId);
+        if (members != null) {
+            for (UUID memberId : members) {
+                if (!memberId.equals(userId)) {
+                    sessionManager.sendToUser(memberId, encoded);
+                }
+            }
+        } else {
+            for (UUID connectedUserId : sessionManager.getAllConnectedUserIds()) {
+                if (!connectedUserId.equals(userId)) {
+                    sessionManager.sendToUser(connectedUserId, encoded);
+                }
             }
         }
     }
 
     private void handleHeartbeat(UUID userId) {
         redisTemplate.opsForValue().set(RedisKeys.heartbeat(userId), String.valueOf(Instant.now().toEpochMilli()));
+        // Fix 16: Refresh presence TTL
+        redisTemplate.expire(RedisKeys.presence(userId), PRESENCE_TTL);
         log.debug("Heartbeat updated for user {}", userId);
     }
 
@@ -227,9 +277,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 builder.requestId(requestId);
             }
             WsOutboundMessage error = builder.build();
-            synchronized (session) {
-                session.sendMessage(new TextMessage(codec.encode(error)));
-            }
+            session.sendMessage(new TextMessage(codec.encode(error)));
         } catch (Exception e) {
             log.error("Failed to send error message to session {}", session.getId(), e);
         }

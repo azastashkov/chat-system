@@ -16,6 +16,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.RedisTemplate;
 
 import java.util.List;
 import java.util.Optional;
@@ -43,6 +44,9 @@ class ChannelServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private RedisTemplate<String, String> redisTemplate;
 
     @InjectMocks
     private ChannelService channelService;

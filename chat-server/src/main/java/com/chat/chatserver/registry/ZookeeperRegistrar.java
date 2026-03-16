@@ -53,6 +53,18 @@ public class ZookeeperRegistrar {
         log.info("Registered chat server in ZooKeeper: path={}, data={}", path, json);
     }
 
+    public void deregisterNow() {
+        try {
+            String path = "/chat-servers/" + serverId;
+            if (curatorFramework.checkExists().forPath(path) != null) {
+                curatorFramework.delete().forPath(path);
+                log.info("Deregistered chat server {} from ZooKeeper", serverId);
+            }
+        } catch (Exception e) {
+            log.error("Failed to deregister from ZooKeeper", e);
+        }
+    }
+
     @PreDestroy
     public void deregister() {
         log.info("Deregistering chat server {} from ZooKeeper (ephemeral node will auto-delete)", serverId);

@@ -4,6 +4,7 @@ import com.chat.chatserver.codec.WsMessageCodec;
 import com.chat.chatserver.metrics.ChatMetrics;
 import com.chat.chatserver.model.ChannelMember;
 import com.chat.chatserver.model.Message;
+import com.chat.common.constant.RedisKeys;
 import com.chat.common.event.ChatMessageEvent;
 import com.chat.common.util.JsonUtil;
 import com.chat.common.util.TimeUuidUtil;
@@ -16,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.cassandra.core.CassandraTemplate;
 import org.springframework.data.cassandra.core.query.Criteria;
 import org.springframework.data.cassandra.core.query.Query;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -34,6 +35,7 @@ public class MessageService {
     private final MessageFanoutService messageFanoutService;
     private final WsMessageCodec codec;
     private final ChatMetrics chatMetrics;
+    private final RedisTemplate<String, String> redisTemplate;
 
     public void handleMessage(UUID senderId, String senderName, JsonNode payload,
                               String requestId, WebSocketSession senderSession) {
@@ -58,7 +60,10 @@ public class MessageService {
         UUID messageId = TimeUuidUtil.now();
         Instant now = Instant.now();
 
-        // Store message in Cassandra
+        // Fix 14: Get sequence number from Redis
+        Long sequenceNumber = redisTemplate.opsForValue().increment(RedisKeys.channelSequence(channelId));
+
+        // Build message
         Message message = Message.builder()
                 .channelId(channelId)
                 .messageId(messageId)
@@ -66,10 +71,19 @@ public class MessageService {
                 .senderName(senderName)
                 .content(content)
                 .messageType(messageType)
+                .sequenceNumber(sequenceNumber)
                 .createdAt(now)
                 .build();
 
-        persistMessageAsync(message);
+        // Fix 6: Persist synchronously - if it fails, send ERROR and return
+        try {
+            cassandraTemplate.insert(message);
+            log.debug("Message {} persisted to Cassandra", messageId);
+        } catch (Exception e) {
+            log.error("Failed to persist message {} to Cassandra", messageId, e);
+            sendError(senderSession, "Failed to persist message", requestId);
+            return;
+        }
 
         // Build event for fanout
         ChatMessageEvent event = ChatMessageEvent.builder()
@@ -79,6 +93,7 @@ public class MessageService {
                 .senderName(senderName)
                 .content(content)
                 .messageType(messageType)
+                .sequenceNumber(sequenceNumber)
                 .timestamp(now)
                 .build();
 
@@ -88,6 +103,7 @@ public class MessageService {
         // Send SEND_ACK back to sender
         sendAck(senderSession, messageId, requestId);
 
+        // Fix 6: Metrics after confirmed persistence
         chatMetrics.incrementMessagesSent();
         chatMetrics.recordLatency(timer);
 
@@ -102,16 +118,6 @@ public class MessageService {
         return cassandraTemplate.exists(query, ChannelMember.class);
     }
 
-    @Async
-    public void persistMessageAsync(Message message) {
-        try {
-            cassandraTemplate.insert(message);
-            log.debug("Message {} persisted to Cassandra", message.getMessageId());
-        } catch (Exception e) {
-            log.error("Failed to persist message {} to Cassandra", message.getMessageId(), e);
-        }
-    }
-
     private void sendAck(WebSocketSession session, UUID messageId, String requestId) {
         try {
             WsOutboundMessage ack = WsOutboundMessage.builder()
@@ -120,9 +126,7 @@ public class MessageService {
                     .requestId(requestId)
                     .timestamp(Instant.now())
                     .build();
-            synchronized (session) {
-                session.sendMessage(new TextMessage(codec.encode(ack)));
-            }
+            session.sendMessage(new TextMessage(codec.encode(ack)));
         } catch (Exception e) {
             log.error("Failed to send ACK for requestId={}", requestId, e);
         }
@@ -136,9 +140,7 @@ public class MessageService {
                     .requestId(requestId)
                     .timestamp(Instant.now())
                     .build();
-            synchronized (session) {
-                session.sendMessage(new TextMessage(codec.encode(error)));
-            }
+            session.sendMessage(new TextMessage(codec.encode(error)));
         } catch (Exception e) {
             log.error("Failed to send error for requestId={}", requestId, e);
         }

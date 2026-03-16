@@ -1,5 +1,5 @@
 CREATE KEYSPACE IF NOT EXISTS chat_system
-WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
+WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 3};
 
 USE chat_system;
 
@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS messages (
     sender_name TEXT,
     content TEXT,
     message_type TEXT,
+    sequence_number BIGINT,
     created_at TIMESTAMP,
     PRIMARY KEY (channel_id, message_id)
 ) WITH CLUSTERING ORDER BY (message_id DESC);

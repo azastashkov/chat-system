@@ -9,6 +9,7 @@ import com.chat.api.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -27,6 +28,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final UserByUsernameRepository userByUsernameRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final BCryptPasswordEncoder passwordEncoder;
 
     public Map<String, Object> register(String username, String password, String displayName) {
         if (userByUsernameRepository.findById(username).isPresent()) {
@@ -35,7 +37,7 @@ public class AuthService {
 
         UUID userId = UUID.randomUUID();
         Instant now = Instant.now();
-        String passwordHash = hashPassword(password);
+        String passwordHash = passwordEncoder.encode(password);
 
         User user = User.builder()
                 .userId(userId)
@@ -70,9 +72,32 @@ public class AuthService {
         UserByUsername user = userByUsernameRepository.findById(username)
                 .orElseThrow(() -> new ApiException("Invalid username or password", HttpStatus.UNAUTHORIZED));
 
-        String passwordHash = hashPassword(password);
-        if (!passwordHash.equals(user.getPasswordHash())) {
-            throw new ApiException("Invalid username or password", HttpStatus.UNAUTHORIZED);
+        String storedHash = user.getPasswordHash();
+
+        // Detect hash format: SHA-256 is 64-char hex, BCrypt starts with $2
+        if (storedHash.length() == 64 && storedHash.matches("[0-9a-f]+")) {
+            // Legacy SHA-256 hash
+            String sha256Hash = hashPasswordSha256(password);
+            if (!sha256Hash.equals(storedHash)) {
+                throw new ApiException("Invalid username or password", HttpStatus.UNAUTHORIZED);
+            }
+
+            // Migrate to BCrypt
+            String bcryptHash = passwordEncoder.encode(password);
+            user.setPasswordHash(bcryptHash);
+            userByUsernameRepository.save(user);
+
+            userRepository.findById(user.getUserId()).ifPresent(u -> {
+                u.setPasswordHash(bcryptHash);
+                userRepository.save(u);
+            });
+
+            log.info("Migrated password hash for user {} from SHA-256 to BCrypt", username);
+        } else {
+            // BCrypt hash
+            if (!passwordEncoder.matches(password, storedHash)) {
+                throw new ApiException("Invalid username or password", HttpStatus.UNAUTHORIZED);
+            }
         }
 
         String token = jwtTokenProvider.generateToken(user.getUserId(), username);
@@ -85,7 +110,7 @@ public class AuthService {
         );
     }
 
-    private String hashPassword(String password) {
+    private String hashPasswordSha256(String password) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(password.getBytes(StandardCharsets.UTF_8));

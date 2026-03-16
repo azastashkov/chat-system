@@ -47,50 +47,27 @@ class PresenceServiceTest {
     }
 
     @Test
-    void handleConnect_newUser_setsOnlineAndBroadcasts() {
+    void handleConnect_delegatesToChatServer() {
         UUID userId = UUID.randomUUID();
-        String key = RedisKeys.presence(userId);
-        when(valueOperations.get(key)).thenReturn(null);
 
+        // Fix 16: handleConnect is now a no-op (chat-server manages presence)
         presenceService.handleConnect(userId);
 
-        verify(valueOperations).set(eq(key), eq("ONLINE"), eq(Duration.ofSeconds(90)));
-
-        ArgumentCaptor<PresenceChangeEvent> captor = ArgumentCaptor.forClass(PresenceChangeEvent.class);
-        verify(broadcastService).broadcastChange(captor.capture());
-        PresenceChangeEvent event = captor.getValue();
-        assertThat(event.getUserId()).isEqualTo(userId);
-        assertThat(event.getOldStatus()).isEqualTo("OFFLINE");
-        assertThat(event.getNewStatus()).isEqualTo("ONLINE");
-    }
-
-    @Test
-    void handleConnect_alreadyOnline_doesNotBroadcast() {
-        UUID userId = UUID.randomUUID();
-        String key = RedisKeys.presence(userId);
-        when(valueOperations.get(key)).thenReturn("ONLINE");
-
-        presenceService.handleConnect(userId);
-
-        verify(valueOperations).set(eq(key), eq("ONLINE"), eq(Duration.ofSeconds(90)));
+        // Should NOT set presence directly
+        verify(valueOperations, never()).set(anyString(), anyString(), any(Duration.class));
         verify(broadcastService, never()).broadcastChange(any());
     }
 
     @Test
-    void handleDisconnect_setsOfflineAndBroadcasts() {
+    void handleDisconnect_delegatesToChatServer() {
         UUID userId = UUID.randomUUID();
-        String key = RedisKeys.presence(userId);
 
+        // Fix 16: handleDisconnect is now a no-op (chat-server manages presence)
         presenceService.handleDisconnect(userId);
 
-        verify(valueOperations).set(key, "OFFLINE");
-
-        ArgumentCaptor<PresenceChangeEvent> captor = ArgumentCaptor.forClass(PresenceChangeEvent.class);
-        verify(broadcastService).broadcastChange(captor.capture());
-        PresenceChangeEvent event = captor.getValue();
-        assertThat(event.getUserId()).isEqualTo(userId);
-        assertThat(event.getOldStatus()).isEqualTo("ONLINE");
-        assertThat(event.getNewStatus()).isEqualTo("OFFLINE");
+        // Should NOT set presence directly
+        verify(valueOperations, never()).set(anyString(), anyString());
+        verify(broadcastService, never()).broadcastChange(any());
     }
 
     @Test
@@ -101,7 +78,7 @@ class PresenceServiceTest {
 
         presenceService.handleHeartbeat(userId);
 
-        verify(redisTemplate).expire(eq(presenceKey), eq(Duration.ofSeconds(90)));
+        verify(redisTemplate).expire(eq(presenceKey), eq(Duration.ofSeconds(60)));
         verify(valueOperations).set(eq(heartbeatKey), anyString(), eq(Duration.ofSeconds(60)));
     }
 
@@ -141,5 +118,30 @@ class PresenceServiceTest {
         assertThat(result).hasSize(2);
         assertThat(result.get(0).getStatus()).isEqualTo("ONLINE");
         assertThat(result.get(1).getStatus()).isEqualTo("OFFLINE");
+    }
+
+    @Test
+    void markOffline_onlineUser_setsOfflineAndBroadcasts() {
+        UUID userId = UUID.randomUUID();
+        String key = RedisKeys.presence(userId);
+        when(valueOperations.get(key)).thenReturn("ONLINE");
+
+        presenceService.markOffline(userId);
+
+        verify(valueOperations).set(key, "OFFLINE");
+        ArgumentCaptor<PresenceChangeEvent> captor = ArgumentCaptor.forClass(PresenceChangeEvent.class);
+        verify(broadcastService).broadcastChange(captor.capture());
+        assertThat(captor.getValue().getNewStatus()).isEqualTo("OFFLINE");
+    }
+
+    @Test
+    void markOffline_alreadyOffline_doesNothing() {
+        UUID userId = UUID.randomUUID();
+        String key = RedisKeys.presence(userId);
+        when(valueOperations.get(key)).thenReturn("OFFLINE");
+
+        presenceService.markOffline(userId);
+
+        verify(broadcastService, never()).broadcastChange(any());
     }
 }

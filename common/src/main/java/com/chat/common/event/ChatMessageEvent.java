@@ -21,5 +21,6 @@ public class ChatMessageEvent {
     private String content;
     private String messageType;
     private Instant timestamp;
+    private Long sequenceNumber;
     private List<UUID> targetUserIds;
 }

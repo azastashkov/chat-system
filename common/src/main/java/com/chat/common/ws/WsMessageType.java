@@ -8,5 +8,6 @@ public enum WsMessageType {
     TYPING,
     HEARTBEAT,
     PRESENCE_UPDATE,
-    ERROR
+    ERROR,
+    RECONNECT
 }
